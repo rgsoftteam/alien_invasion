@@ -1,3 +1,4 @@
+
 class Settings():
 	"""класс для хранения всех настроек игры Alien Invasion"""
 
