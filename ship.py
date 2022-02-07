@@ -14,15 +14,16 @@ class Ship():
 		self.rect = self.image.get_rect()
 		# каждый новый корабль появляется у нижнего края экрана
 		self.rect.midbottom = self.screen_rect.midbottom
+		#self.rect.midtop = self.screen_rect.midtop
 		# сохранение вещественной координаты центра корабля
 		self.x = float(self.rect.x)
-		self.y = float(self.rect.y)
+		#self.y = float(self.rect.y)
 
 		# флаги перемещения
 		self.moving_right = False
 		self.moving_left = False
-		self.moving_top = False
-		self.moving_bottom = False
+		#self.moving_top = False
+		#self.moving_bottom = False
 
 	def update(self):
 		""""обновляет позицию корабля с учетом флагов"""
@@ -32,17 +33,23 @@ class Ship():
 		if self.moving_left and self.rect.left > 0:
 			self.x -= self.settings.ship_speed
 		# обновляется атрибут y, не rect
-		if self.moving_top and self.rect.top < self.screen_rect.bottom:
-			self.y += self.settings.ship_speed
-		if self.moving_bottom and self.rect.bottom > 0:
-			self.y -= self.settings.ship_speed
+		#if self.moving_top and self.rect.top < self.screen_rect.bottom:
+			#self.y += self.settings.ship_speed
+		#if self.moving_bottom and self.rect.bottom > 0:
+			#self.y -= self.settings.ship_speed
 
 		# обновление атрибута rect на основании self.x
 		self.rect.x = self.x
 		# обновление атрибута rect на основании self.y
-		self.rect.y = self.y
+		#self.rect.y = self.y
 
 	def blitme(self):
 		"""рисует корабль в текущей позиции"""
 		self.screen.blit(self.image, self.rect)
 
+	def center_ship(self):
+		"""размещает корабль в центре нижней стороны"""
+		self.rect.midbottom = self.screen_rect.midbottom
+		#self.rect.midtop = self.screen_rect.midtop
+		self.x = float(self.rect.x)
+		#self.y = float(self.rect.y)

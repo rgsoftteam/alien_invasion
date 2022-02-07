@@ -1,6 +1,8 @@
 import sys
+from time import sleep
 import pygame
 from settings import Settings
+from game_stats import GameStats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
@@ -18,6 +20,9 @@ class AlienInvasion:
 		self.settings.screen_height = self.screen.get_rect().height
 		pygame.display.set_caption("Alien Invasion")
 
+		# создание экземпляра для хранения игровой статистики
+		self.stats = GameStats(self)
+
 		self.ship = Ship(self)
 		self.bullets = pygame.sprite.Group()
 		self.aliens = pygame.sprite.Group()
@@ -31,9 +36,12 @@ class AlienInvasion:
 		"""запуск основного цикла игры"""
 		while True:
 			self._check_events()
-			self.ship.update()
-			self._update_bullets()
-			self._update_aliens()
+
+			if self.stats.game_active:
+				self.ship.update()
+				self._update_bullets()
+				self._update_aliens()
+
 			self._update_screen()
 			
 
@@ -53,10 +61,10 @@ class AlienInvasion:
 			self.ship.moving_right = True
 		elif event.key == pygame.K_LEFT:
 			self.ship.moving_left = True
-		elif event.key == pygame.K_UP:
-			self.ship.moving_bottom = True
-		elif event.key == pygame.K_DOWN:
-			self.ship.moving_top = True
+		#elif event.key == pygame.K_UP:
+		#	self.ship.moving_bottom = True
+		#elif event.key == pygame.K_DOWN:
+		#	self.ship.moving_top = True
 		elif event.key == pygame.K_q:
 			sys.exit()
 		elif event.key == pygame.K_SPACE:
@@ -68,10 +76,10 @@ class AlienInvasion:
 			self.ship.moving_right = False
 		elif event.key == pygame.K_LEFT:
 			self.ship.moving_left = False
-		elif event.key == pygame.K_UP:
-			self.ship.moving_bottom = False
-		elif event.key == pygame.K_DOWN:
-			self.ship.moving_top = False
+		#elif event.key == pygame.K_UP:
+			#self.ship.moving_bottom = False
+		#elif event.key == pygame.K_DOWN:
+			#self.ship.moving_top = False
 
 	def _fire_bullet(self):
 		"""создание нового снаряда и включение его в группу bullets"""
@@ -89,6 +97,18 @@ class AlienInvasion:
 			if bullet.rect.bottom <= 0:
 				self.bullets.remove(bullet)
 
+		self._check_bullet_alien_collisions()
+
+	def _check_bullet_alien_collisions(self):
+		# проверка попаданий в пришельцев
+		# при обнаружении попадания удалить снаряд и пришельца
+		collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+
+		if not self.aliens:
+			# уничтожение существующих снарядов и создание новго флота
+			self.bullets.empty()
+			self._create_fleet()
+
 	def _update_aliens(self):
 		"""
 		проверяет, достиг ли флот края экрана, с последующим
@@ -96,6 +116,13 @@ class AlienInvasion:
 		"""
 		self._check_fleet_edges()
 		self.aliens.update()
+
+		# проверка коллизий "пришелец-корабль"
+		if pygame.sprite.spritecollideany(self.ship, self.aliens):
+			self._ship_hit()
+
+		# проверить, добрались ли пришельцы до нижнего края экрана
+		self._check_aliens_bottom()
 
 	def _create_fleet(self):
 		"""создание флота вторжения"""
@@ -138,6 +165,25 @@ class AlienInvasion:
 			alien.rect.y += self.settings.fleet_drop_speed
 		self.settings.fleet_direction *= -1
 
+	def _ship_hit(self):
+		"""обрабатывает столкновение корабля с пришельцем"""
+		if self.stats.ships_left > 0:
+			# уменьшение ships_left
+			self.stats.ships_left -= 1
+
+			# очистка списков пришельцев и снарядов
+			self.aliens.empty()
+			self.bullets.empty()
+
+			# создание нового флота и размещение корабля в центре
+			self._create_fleet()
+			self.ship.center_ship()
+
+			# пауза
+			sleep(1.5)
+		else:
+			self.stats.game_active = False
+
 	def _update_screen(self):
 		"""обновляет изображения на экране и отображает новый экран"""
 		self.screen.fill(self.settings.bg_color)
@@ -149,6 +195,14 @@ class AlienInvasion:
 		# отображение последнего прорисованного экрана
 		pygame.display.flip()
 
+	def _check_aliens_bottom(self):
+		"""проверяет, добрались ли пришельцы до нижнего края экрана"""
+		screen_rect = self.screen.get_rect()
+		for alien in self.aliens.sprites():
+			if alien.rect.bottom >= screen_rect.bottom:
+				# происходит то же, что и при столкновении с кораблем 
+				self._ship_hit()
+				break
 
 if __name__ == '__main__':
 	# создание экземпляра и запуск игры
